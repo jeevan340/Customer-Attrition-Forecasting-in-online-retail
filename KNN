@@ -1,0 +1,60 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+import numpy as np
+
+# Load the dataset from Excel (replace 'dataset.xlsx' with the actual path to your dataset)
+data = pd.read_excel('dataset.xlsx')
+
+# Drop rows with missing values
+data.dropna(inplace=True)
+
+# Assuming 'Churn' is the target variable we want to predict
+X = data.drop('Churn', axis=1)  # Features
+y = data['Churn']  # Target variable
+
+# Separate numerical and categorical columns
+numerical_cols = X.select_dtypes(include=['number']).columns
+categorical_cols = X.select_dtypes(include=['object']).columns
+
+# Handling numerical columns (in this example, we'll use mean to fill missing values)
+X_numerical = X[numerical_cols].fillna(X[numerical_cols].mean())
+
+# Handling categorical columns
+X_categorical = X[categorical_cols].fillna("Unknown")  # Fill missing values with "Unknown"
+X_categorical = pd.get_dummies(X_categorical, columns=categorical_cols, drop_first=True)
+
+# Concatenate numerical and categorical features
+X_processed = pd.concat([X_numerical, X_categorical], axis=1)
+
+# Standardize the features using StandardScaler
+scaler = StandardScaler()
+X_processed = scaler.fit_transform(X_processed)
+
+# Number of iterations
+num_iterations = 10
+
+# List to store accuracies
+accuracies = []
+
+for i in range(num_iterations):
+    # Split the data into training and testing sets for each iteration
+    X_train, X_test, y_train, y_test = train_test_split(X_processed, y, test_size=0.2, random_state=i)
+
+    # Create and train the KNN Classifier
+    # Let's use 5 neighbors in this example
+    model = KNeighborsClassifier(n_neighbors=5)
+    model.fit(X_train, y_train)
+
+    # Predict the labels for the test set
+    y_pred = model.predict(X_test)
+
+    # Calculate accuracy
+    accuracy = accuracy_score(y_test, y_pred)
+    accuracies.append(accuracy)
+    print(f"Accuracy for Iteration {i + 1}: {accuracy}")
+
+# Print the average accuracy
+print("Average Accuracy:", np.mean(accuracies))
